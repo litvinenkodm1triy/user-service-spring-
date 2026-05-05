@@ -29,9 +29,18 @@ public class User {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "update_at")
+    private LocalDateTime updatedAt;
+
     @PrePersist
     public void createDate() {
         createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void updateDate() {
+        updatedAt = LocalDateTime.now();
     }
 
 }
