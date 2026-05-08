@@ -1,7 +1,6 @@
 package user_service.dto.response;
 
 import lombok.Data;
-
 import java.time.LocalDateTime;
 
 @Data
@@ -17,6 +16,5 @@ public class UserResponse {
 
     private LocalDateTime createdAt;
 
-    private LocalDateTime updateAt;
-
+    private LocalDateTime updatedAt;
 }

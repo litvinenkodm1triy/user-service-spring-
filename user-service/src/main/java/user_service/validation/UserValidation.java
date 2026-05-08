@@ -25,7 +25,7 @@ public class UserValidation {
     public static void emailValidation(User user) {
         String email = user.getEmail();
         if (email == null || email.trim().isEmpty()) {
-            throw new UserValidationException("не может быть пустым");
+            throw new UserValidationException("не может быть пустым!");
         }
         if (!email.contains("@") || !email.contains(".")) {
             throw new UserValidationException("Email должен содержать @ и .");

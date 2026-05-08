@@ -12,10 +12,12 @@ public interface UserMapper {
 
     User toEntity(UserRequest userRequest);
 
-    UserResponse toUserCreateResponse(User user);
+
+    @Mapping(source = "updatedAt", target = "updatedAt")
+    UserResponse toResponse(User user);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updateAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     void updateUserFromRequest(UserRequest request, @MappingTarget User user);
 }

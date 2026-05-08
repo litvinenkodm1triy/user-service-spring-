@@ -6,11 +6,12 @@ import org.springframework.transaction.annotation.Transactional;
 import user_service.dto.request.UserRequest;
 import user_service.dto.response.UserResponse;
 import user_service.entity.User;
+import user_service.exception.UserNotFoundException;
 import user_service.mapper.UserMapper;
 import user_service.repository.UserRepository;
+import user_service.validation.UserValidation;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,29 +23,40 @@ public class UserService {
     @Transactional
     public UserResponse createUser(UserRequest request) {
         User user = userMapper.toEntity(request);
-        return userMapper.toUserCreateResponse(userRepository.save(user));
+        UserValidation.nameValidation(user);
+        UserValidation.emailValidation(user);
+        UserValidation.ageValidation(user);
+
+        User saved = userRepository.save(user);
+        return userMapper.toResponse(saved);
     }
 
     @Transactional(readOnly = true)
     public UserResponse findUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Не найден пользователь с id: " + id));
-        return userMapper.toUserCreateResponse(user);
+                .orElseThrow(() -> new UserNotFoundException("Не найден пользователь с id: " + id));
+        return userMapper.toResponse(user);
     }
 
     @Transactional
     public UserResponse updateUser(Long id, UserRequest request) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Не найден пользователь с id: " + id));
+                .orElseThrow(() -> new UserNotFoundException("Не найден пользователь с id: " + id));
+
         userMapper.updateUserFromRequest(request, user);
+        // ✅ валидация обновлённых данных
+        UserValidation.nameValidation(user);
+        UserValidation.emailValidation(user);
+        UserValidation.ageValidation(user);
+
         User updated = userRepository.save(user);
-        return userMapper.toUserCreateResponse(updated);
+        return userMapper.toResponse(updated);
     }
 
     @Transactional
     public void deleteUserById(Long id) {
         if (!userRepository.existsById(id)) {
-            throw new RuntimeException("Не найден пользователь с id " + id);
+            throw new UserNotFoundException("Не найден пользователь с id: " + id);
         }
         userRepository.deleteById(id);
     }
@@ -53,7 +65,7 @@ public class UserService {
     public List<UserResponse> findAllUsers() {
         return userRepository.findAll()
                 .stream()
-                .map(userMapper::toUserCreateResponse)
+                .map(userMapper::toResponse)
                 .toList();
     }
 }
