@@ -1,18 +1,18 @@
 package user_service.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import user_service.dto.request.UserRequest;
 import user_service.dto.response.UserResponse;
 import user_service.service.UserService;
-import user_service.exception.UserNotFoundException;
-import user_service.exception.UserValidationException;
 
 import java.util.List;
-import java.util.Map;
 
+@Slf4j
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/users")
@@ -21,55 +21,42 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    public ResponseEntity<?> createUser(@RequestBody UserRequest request) {
-        try {
-            UserResponse response = userService.createUser(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (UserValidationException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserRequest request) {
+        log.info("==> Создание пользователя: {}", request);
+        UserResponse response = userService.createUser(request);
+        log.info("<== Пользователь создан, id={}", response.getId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getUser(@PathVariable Long id) {
-        try {
-            UserResponse response = userService.findUserById(id);
-            return ResponseEntity.ok(response);
-        } catch (UserNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<UserResponse> getUser(@PathVariable Long id) {
+        log.info("==> Запрос пользователя с id={}", id);
+        UserResponse response = userService.findUserById(id);
+        log.info("<== Найден пользователь: {}", response);
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody UserRequest request) {
-        try {
-            UserResponse response = userService.updateUser(id, request);
-            return ResponseEntity.ok(response);
-        } catch (UserNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        } catch (UserValidationException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @Valid @RequestBody UserRequest request) {
+        log.info("==> Обновление пользователя id={}, данные: {}", id, request);
+        UserResponse response = userService.updateUser(id, request);
+        log.info("<== Пользователь id={} обновлён", id);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
-        try {
-            userService.deleteUserById(id);
-            return ResponseEntity.noContent().build();
-        } catch (UserNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        log.info("==> Запрос на удаление пользователя id={}", id);
+        userService.deleteUserById(id);
+        log.info("<== Пользователь id={} удалён", id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping
-    public ResponseEntity<?> getAllUsers() {
-        try {
-            List<UserResponse> users = userService.findAllUsers();
-            return ResponseEntity.ok(users);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to fetch users"));
-        }
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
+        log.info("==> Запрос всех пользователей");
+        List<UserResponse> users = userService.findAllUsers();
+        log.info("<== Найдено {} пользователей", users.size());
+        return ResponseEntity.ok(users);
     }
 }
