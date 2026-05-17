@@ -10,7 +10,6 @@ import com.example.entity.User;
 import com.example.exception.UserNotFoundException;
 import com.example.mapper.UserMapper;
 import com.example.repository.UserRepository;
-
 import java.util.List;
 
 @Slf4j
@@ -20,6 +19,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final UserEventPublisher eventPublisher;
 
     @Transactional
     public UserResponse createUser(UserRequest request) {
@@ -27,6 +27,7 @@ public class UserService {
         User user = userMapper.toEntity(request);
         User saved = userRepository.save(user);
         log.info("Пользователь сохранён с id={}", saved.getId());
+        eventPublisher.publishUserEvent("CREATE", saved.getEmail());
         return userMapper.toResponse(saved);
     }
 
@@ -59,12 +60,15 @@ public class UserService {
     @Transactional
     public void deleteUserById(Long id) {
         log.debug("Проверка существования пользователя id={} для удаления", id);
-        if (!userRepository.existsById(id)) {
-            log.warn("Попытка удалить несуществующего пользователя id={}", id);
-            throw new UserNotFoundException("Не найден пользователь с id: " + id);
-        }
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("Попытка удалить несуществующего пользователя id={}", id);
+                    return new UserNotFoundException("Не найден пользователь с id: " + id);
+                });
+        String email = user.getEmail();
         userRepository.deleteById(id);
         log.info("Пользователь id={} удалён из БД", id);
+        eventPublisher.publishUserEvent("DELETE", email);
     }
 
     @Transactional(readOnly = true)

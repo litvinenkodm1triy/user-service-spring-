@@ -1,9 +1,10 @@
 package com.example.controller;
 
 import com.example.UserServiceApplication;
+import com.example.config.TestKafkaConfig;
+import com.example.dto.request.UserRequest;
 import com.example.entity.User;
 import com.example.repository.UserRepository;
-import com.example.dto.request.UserRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,7 @@ import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(classes = UserServiceApplication.class)
+@SpringBootTest(classes = {UserServiceApplication.class, TestKafkaConfig.class})
 @AutoConfigureMockMvc
 @Testcontainers
 class UserControllerTest {
@@ -41,6 +42,9 @@ class UserControllerTest {
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
+
+        registry.add("spring.kafka.bootstrap-servers", () -> "localhost:9999");
+        registry.add("spring.kafka.producer.properties.allow.auto.create.topics", () -> "false");
     }
 
     @Autowired
