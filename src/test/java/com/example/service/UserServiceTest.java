@@ -1,17 +1,17 @@
 package com.example.service;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import com.example.dto.request.UserRequest;
 import com.example.dto.response.UserResponse;
 import com.example.entity.User;
 import com.example.exception.UserNotFoundException;
 import com.example.mapper.UserMapper;
 import com.example.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +29,9 @@ class UserServiceTest {
 
     @Mock
     private UserMapper userMapper;
+
+    @Mock
+    private UserEventPublisher eventPublisher;
 
     @InjectMocks
     private UserService userService;
@@ -67,6 +70,7 @@ class UserServiceTest {
 
         assertThat(result).isEqualTo(response);
         verify(userRepository).save(user);
+        verify(eventPublisher).publishUserEvent("CREATE", user.getEmail());
     }
 
     @Test
@@ -77,6 +81,7 @@ class UserServiceTest {
         UserResponse result = userService.findUserById(1L);
 
         assertThat(result).isEqualTo(response);
+        verify(eventPublisher, never()).publishUserEvent(any(), any());
     }
 
     @Test
@@ -111,24 +116,30 @@ class UserServiceTest {
         assertThat(result.getName()).isEqualTo("Обновлённый");
         verify(userMapper).updateUserFromRequest(updateRequest, user);
         verify(userRepository).save(user);
+        verify(eventPublisher, never()).publishUserEvent(any(), any());
     }
 
     @Test
     void deleteUserById_WhenExists_ShouldDelete() {
-        when(userRepository.existsById(1L)).thenReturn(true);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         doNothing().when(userRepository).deleteById(1L);
 
         userService.deleteUserById(1L);
 
         verify(userRepository).deleteById(1L);
+        verify(eventPublisher).publishUserEvent("DELETE", user.getEmail());
     }
 
     @Test
     void deleteUserById_WhenNotExists_ShouldThrowException() {
-        when(userRepository.existsById(99L)).thenReturn(false);
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.deleteUserById(99L))
-                .isInstanceOf(UserNotFoundException.class);
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessageContaining("Не найден пользователь с id: 99");
+
+        verify(userRepository, never()).deleteById(any());
+        verify(eventPublisher, never()).publishUserEvent(any(), any());
     }
 
     @Test
